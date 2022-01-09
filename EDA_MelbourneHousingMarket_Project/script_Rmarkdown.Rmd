@@ -24,7 +24,7 @@ The dataset includes data from houses sold in the real state market of Melbourne
 
 + Cleaning working directory and loading required libraries:
 
-```{r}
+```{r echo = T, results = 'hide'}
 rm(list = ls())
 library(tidyverse)
 library(leaflet)
