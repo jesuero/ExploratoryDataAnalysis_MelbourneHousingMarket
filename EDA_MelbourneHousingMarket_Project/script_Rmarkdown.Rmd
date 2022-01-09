@@ -13,17 +13,16 @@ date: 'Last update: `r format(Sys.time(), "%Y-%m-%d")`'
 
 # Introducción
 
-En este documento se desarrolla el proyecto para la asignatura de Fundamentos Matemáticos del Análisis de Datos del Máster de Big Data de ICAI.
+In this project for Mathematical Foundations of Data Analysis Course from the Big Data Master an Exploratory Data Analysis and Linear Regression Model is done using R and Melbourne Housing Market dataset.
 
-Se va a analizar un dataset llamado Melbourne Housing Market y obtenido de Kaggle en [este enlace](https://www.kaggle.com/anthonypino/melbourne-housing-market).
+This dataset can be downloaded from [this Kaggle website](https://www.kaggle.com/anthonypino/melbourne-housing-market):
 
-El dataset incluye datos sobre viviendas puestas a la venta en el mercado inmobiliario de Melbourne (Australia), precio de venta, dirección, barrio, número de habitaciones, agente inmobiliario...
+The dataset includes data from houses sold in the real state market of Melbourne (Australia), price, address, suburb, number of rooms, real state agent...
 
 
+## Preliminaries
 
-## Preliminares
-
-+ Se limpia el directorio de trabajo y se cargan las librerías que se van a usar:
++ Cleaning working directory and loading required libraries:
 
 ```{r}
 rm(list = ls())
@@ -36,36 +35,36 @@ library(car)
 library(caret)
 ```
 
-+ Se carga el dataset y se guarda en la variable housing:
++ The dataset is loaded and stored in the variable housing:
 
 ```{r}
 housing <- read_csv('data/Melbourne_housing_FULL.csv')
 ```
 
 
-# Análisis del dataset
+# Analysis of the dataset
 
-## Tipos de variables
+## Variable types
 
-El dataset original se compone de 34857 observaciones distribuidas en 21 variables.
+The original dataset consists on 34857 observations distributed in 21 variables.
 
-Se observa la distribución de las variables mediante el comando summary: si es numérica o categórica, entre que valores se mueve, su media...
+The distribution of the variables is shown by the command summary: if it is numeric or categorical, between which values it moves, it mean...
 
 ```{r}
 summary(housing)
 ```
 
-A continuación, se proporciona una descripción de cada una de las variables presentes en el dataset:
+Next, a description from each variable in the dataset is provided:
 
-+ Suburb: Barrio en el que se sitúa la vivienda (categórica)
-+ Address: Dirección de la vivienda (categórica)
-+ Rooms: Número de habitaciones de la vivienda (discreta)
-+ Type: Tipo de vivienda (categórica)
++ Suburb: Neighborhood where the house is located (categorical)
++ Address: Address of the house (categorical)
++ Rooms: Number of rooms of the house (discrete)
++ Type: house type (categorical)
       h - house, cottage, villa, semi, terrace 
       u - unit, duplex
       t - townhouse
-+ Price: Precio en dólares australianos de la vivienda (continua)
-+ Method: Método de venta de la vivienda (categórica)
++ Price: Price of the house in australian dollars (continuous)
++ Method: Sell method of the house (categorical)
       S - property sold 
       SP - property sold prior 
       PI - property passed in 
@@ -75,101 +74,103 @@ A continuación, se proporciona una descripción de cada una de las variables pr
       W - withdrawn prior to auction
       SA - sold after auction 
       SS - sold after auction price not disclosed 
-+ SellerG: Agente inmobiliario (categórica)
-+ Date: Fecha de venta (categórica)
-+ Distance: Distancia al Central Business District de Melbourne (continua)
-+ Postcode: Código postal (categórica)
-+ Bedroom2: Número de habitaciones, dato scraped de otra fuente (discreta)
-+ Bathroom: Número de baños (discreta)
-+ Car: Número de plazas de garaje (discreta)
-+ Landsize: Tamaño del terreno en metros (continua)
-+ Building Area: Tamaño construido en metros (continua)
-+ YearBuilt: Año de contrucción de la vivienda (discreta)
-+ CouncilArea: Ayuntamiento al que pertecene (categórica)
-+ Latitude: Latitud en la que se sitúa la vivienda (continua)
-+ Longitude: Longitud en la que se sitúa la vivienda (continua)
-+ Regionname: Región en la que se sitúa la vivienda (categórica)
-+ Propertycount: Número de propiedades que hay en ese Barrio (discreta)
++ SellerG: Real state agent (categorical)
++ Date: Sell date (categorical)
++ Distance: Distance to Central Business District of Melbourne (continuous)
++ Postcode: Postal code (categorical)
++ Bedroom2: Number of rooms, data scraped from another source (discrete)
++ Bathroom: Number of bathrooms (discrete)
++ Car: Number of car spots (discrete)
++ Landsize: Size of the terrain in meters (continuous)
++ Building Area: Building size in meters (continuous)
++ YearBuilt: Year the house was build (discrete)
++ CouncilArea: Governing council for the area (categorical)
++ Latitude: Latitude where the house is located (continuous)
++ Longitude: Longitude where the house is located (continuous)
++ Regionname: Region where the house is located (categorical)
++ Propertycount: Number of houses in the Neighborhood (discrete)
 
 
-## Tratamiento de valores ausentes (NAs)
+## Missing values treatment (NAs)
 
-Tal y como se vio en el summary existen bastantes registros con valores NAs en alguna de sus variables, se va a proceder a eliminarlos según diferentes criterios.
+As it was seen with summary, there are a few registers with NAs values in some of their variables, 
+Tal y como se vio en el summary existen bastantes registros con valores NAs en alguna de sus variables, they are going to be eliminated according to different criteria.
 
-Se eliminan todas las observaciones con NAs en la columna Price.
+All the NAs observations from column Price are deleted.
 
 ```{r}
 housing = housing %>% 
   drop_na(Price)
 ```
 
-Ahora hay un total de 27247 observaciones, se ejecuta un summary para ver la distribucion de NAs.
+Now there is a total of 27247 observations, summary is executed to see the NAs distribution.
 
 ```{r}
 summary(housing)
 ```
 
-Se decide eliminar los valores ausentes presentes en las columnas con pocos NAs.
+Decision to eliminate missing values in columns where there are little NA number is made. 
 
 ```{r}
 housing = housing %>% 
   drop_na(Distance, Postcode, Propertycount)
 ```
 
-Se eliminan ahora del dataset las columnas BuildingArea y Yearbuilt debido al alto porcentaje de NAs que contienen.
+Columns BuildingArea and Yearbuilt are deleted from the dataset because of the high percentage of NAs.
 
 ```{r}
 housing$BuildingArea = NULL
 housing$YearBuilt = NULL
 ```
 
-Parece que coindicen las observaciones NAs de las variables Car, Bathroom y Bedroom2 (cuando una observación tiene una de estas variables ausentes, tiene todas ellas). Además, la variable que Landsize tiene un elevado número de valores ausentes.
-Por tanto, se eliminan las observaciones con NAs en las variables comentadas.
+It seems that the NAs observations in variables Car, Bathroom and Bedroom2 are the same (when an observation have one of these variables missing, have all of them). Additionally, variable Landsize have a high number of missing values.
+Observations with NAs in previous mentioned variables are deleted from the dataset.
 
 ```{r}
 housing = housing %>% 
   drop_na(Landsize, Car, Bathroom, Bedroom2)
 ```
 
-Se comprueba si queda algún valor ausente en la tabla:
+Checking if there is anymore missing values in the dataset:
 
 ```{r}
 apply(is.na(housing),2,which)
 ```
 
-Existen 22 registros NAs comunes en las variables Lattitude y Longitude, se procede con su eliminación.
+There are 22 observations with common NAs in Lattitude and Longitude, so they are eliminated.
 
 ```{r}
 housing = housing %>% 
   drop_na(Lattitude, Longtitude)
 ```
 
-Se comprueba que ya no queda ningún valor ausente en la tabla:
+It is verified that there are no longer any missing values in the table:
 
 ```{r}
 any(is.na(housing))
 ```
 
 
-## Estudio de variables
+## Study of variables
 
-### Variable Address
-Se quiere ver cuántos valores únicos tiene la variable Address por si se pudiera dividir de alguna forma:
+### Address variable
+
+See how many unique values the Address variable has in case it could be divided in some way:
 
 ```{r}
 length(unique(housing$Address))
 ```
 
-La granularidad de Address es muy alta, por lo que agrupaciones por Address proporcionaran demasiados resultados. Debido a esto, se decide eliminar la columna porque no aportará información de utilidad.
+Address granularity is very high, groups of this column will give too many results, so the column is eliminated because it won't provide useful information.
 
 ```{r}
 housing$Address = NULL
 ```
 
 
-### Variable Suburb
+### Suburb variable
 
-Se convierte la variable a factor y se muestra cuántos niveles tiene, indicando de esta forma el número de suburbios entre los que se distribuyen las viviendas.
+This variable is converted to factor, showing how many levels it has and indicating in this way the number of suburbs within the houses are distributed.
 
 ```{r}
 housing$Suburb = as.factor(housing$Suburb)
@@ -179,7 +180,7 @@ length(levels(housing$Suburb))
 
 ### Variable Rooms
 
-Se muestra la frecuencia absoluta para la variable Rooms, indicando cuantas viviendas hay para un número de habitaciones. Los valores se distribuyen entre 1 y 12 concentrándose entre 1 y 5.
+Absolute frequency is showed for Rooms variable, indicating how many houses are for each number of rooms. The values are distributed between 1 and 12, focusing among 1 and 5.
 
 ```{r}
 table(housing$Rooms)
@@ -188,7 +189,7 @@ table(housing$Rooms)
 
 ### Variable Car
 
-Esta variable indica el número de plazas de aparcamiento que tiene una vivienda. Se decide convertirla a factor y dividirla en dos niveles en función de si tiene (YES) o no (NO) plaza de aparcamiento.
+This variable indicates the number of car spots that a house have. The decision made is to transform it to factor and divide it into two levels: YES (if have car spot/s) or NO (don't have car spot/s).
 
 ```{r}
 housing$Car = as.factor(housing$Car)
@@ -197,9 +198,9 @@ levels(housing$Car)
 ```
 
 
-### Variable Regionname
+### Regionname variable
 
-Se convierte la variable Regionname a factor y se muestra sus niveles, observándose 8 niveles.
+Regioname is transformed to factor and it levels are showed, observing 8 levels.
 
 ```{r}
 housing$Regionname = as.factor(housing$Regionname)
@@ -207,11 +208,11 @@ levels(housing$Regionname)
 ```
 
 
-### Variable SellerG
+### SellerG variable
 
-Para esta variable se va a hacer un estudio detallado en el que se descubrirá quiénes son los vendedores que más venden y dónde se sitúan las viviendas vendidas por ellos.
+This variable is going to be studied in detail in order to discover who are the sellers that get more houses sold and where are these houses located.
 
-En primer lugar, se calcula el número de viviendas vendidas por cada vendedor y el porcentaje que representa respecto al total. Se muestran los 5 vendedores con más viviendas.
+Firstly, the number of houses sold for each seller and the percentage with respect to the total is computed. The 5 sellers with more houses sold is showed.
 
 ```{r}
 TopSellers = housing %>% 
@@ -222,7 +223,7 @@ TopSellers = housing %>%
 head(TopSellers, 5)
 ```
 
-Nelson es el seller con más viviendas, se calcula ahora el numero de viviendas vendidas por Nelson para cada región y la probabilidad de que haya vendido viviendas en cada una.
+Nelson is the seller with more houses. Now, the number of houses sold by Nelson for each region and the probability of Nelson have sold a house in each one is computed.
 
 ```{r}
 housing %>% 
@@ -232,7 +233,7 @@ housing %>%
   mutate(prob = round((houses_by_nelson / sum(houses_by_nelson)*100),2))
 ```
 
-A continuación, se muestra un gráfico de barras con los 5 vendedores con más viviendas, mostrando cuántas tiene cada uno ordenadas de mayor a menor.
+Next, a bar plot with the top 5 sellers is generated, showing how many where sold for each seller sorted from higher to lower value.
 
 ```{r}
 sellerData = housing %>%
@@ -248,11 +249,11 @@ ggplot(sellerData, aes(x = reorder(SellerG, CountPerSeller),
   geom_text(aes(x = SellerG, y = 1, label = paste0("(",CountPerSeller,")",sep="")),
             hjust=0, vjust=0.5, size = 4, colour = 'black',
             fontface = 'bold') +
-  labs(x = 'Seller', y = 'Nº viviendas', title = 'Top 5 vendedores por nº de viviendas') +
+  labs(x = 'Seller', y = 'Nº of houses', title = 'Top 5 sellers per nº of houses') +
   coord_flip()
 ```
 
-Por último, se va a representar (usando la librería leaflet) en un mapa donde se encuentran las viviendas vendidas por los 5 vendedores con más viviendas. Cada punto en el mapa es una vivienda (situada según sus valores de latitud y longitud) y cada color representa cada uno de los 5 vendedores. 
+Lastly, the houses sold by the top 5 sellers is plotted in a map (using leaflet library). Each point in the map is a house (located according to its values of Latitude and Longitude) and each color represents each one of the 5 sellers.
 
 ```{r}
 Sellers = c(head(as.character(sellerData$SellerG),5))
@@ -272,7 +273,7 @@ leaflet(SellersTop) %>% addTiles() %>%
   addCircles(lng = ~Longtitude, lat = ~Lattitude,radius = 3,
              color = ~pal(SellerG))  %>%
   addLegend("bottomright", pal = pal, values = ~SellerG,
-    title = "Distribución de viviendas Top 5 sellers",
+    title = "House distribution Top 5 sellers",
     opacity = 1
   ) %>%
   # controls
@@ -281,9 +282,9 @@ leaflet(SellersTop) %>% addTiles() %>%
 
 
 
-# Estudio de variables según su relación con la variable Precio
+# Variables study according with their relation with Price
 
-+ Se estudia como cambia el precio según el número de habitaciones que tenga la vivienda. Para ello mediante el siguiente gráfico se muestra el precio medio de las viviendas en función del número de habitaciones que tiene.
++ Studied how the Price change depending on the number of house's Rooms. This is done by the next graphic, showing the average price of the houses depending on the number of rooms that it has.
 
 ```{r}
 roomData = housing %>%
@@ -294,12 +295,12 @@ roomData = housing %>%
 ggplot(roomData, aes(x = Rooms,y = AvgPricePerRoom)) +
   scale_x_continuous(breaks=c(0,2,4,6,8,10,12,14,16,18,20)) +
   geom_bar(stat='identity',colour="black", fill = '#f5a742') +
-  labs(x = 'Nº. Habitaciones', y = 'Precio', title = 'Precio medio según el nº de habitaciones')
+  labs(x = 'Nº Rooms', y = 'Price', title = 'Average price depending of nº Rooms')
 ```
 
-Se observa que el precio aumenta cuanto mayor sea el número de habitaciones hasta 6.
+As it can be seen the price goes up as the number of rooms increase, until 6.
 
-+ Para la variable Car se va a estudiar si cambia el precio medio de las viviendas según si tienen plaza de aparcamiento o no.
++ Car variable is studied to see if houses' average price change if they have car spot/s or not.
 
 ```{r}
 carData = housing %>%
@@ -308,12 +309,12 @@ carData = housing %>%
   
 ggplot(carData, aes(x = Car,y = AvgPriceCar, fill = Car)) +
   geom_bar(stat='identity', color='black') +
-  labs(x = 'Tiene plaza de aparcamiento?', y = 'Precio', title = 'Precio medio en función de si tiene o no plaza de aparcamiento')
+  labs(x = 'Have car spot?', y = 'Price', title = 'Average price having car spot or not')
 ```
 
-Parece que el precio se incrementa algo cuando tiene plaza de aparcamiento, pero no hay una diferencia considerable.
+It seems that the price increases a little when there are car spots, but there isn't a significant difference.
 
-+ Se va a analizar cómo cambia el precio de las viviendas según el Suburbio en el que estén situadas. En la variable suburbData se guardan el nombre del suburbio y el precio medio de las viviendas que pertenecen a él (AvgPricePerSuburb). Además se ordenan de mayor a menor y se le añade el símbolo del dolar.
++ How the Price change depending on the Suburb where the house is located? In variable suburbData the name of the suburb and the average price of the houses in it (AvgPricePerSuburb) is stored. Also, they are sorted from higher to lower and the dollar symbol ($) is added.
 
 ```{r}
 suburbData = housing %>%
@@ -324,7 +325,7 @@ suburbData = housing %>%
 suburbData$AvgPriceSuburb = scales::dollar(suburbData$AvgPricePerSuburb)
 ```
 
-Con los datos de los suburbios más caros se crea un gráfico de barras en el que se muestran los 10 más caros, indicando su precio y el nombre.
+With the data from the most expensive Suburbs a bar plot is generated, showing the 10 more expensive and indicating their price and name.
 
 ```{r}
 suburbData = suburbData[0:10,]
@@ -335,11 +336,11 @@ ggplot(suburbData, aes(x = reorder(Suburb, AvgPricePerSuburb),
   geom_text(aes(x = Suburb, y = 1, label = paste0("(",AvgPriceSuburb,")",sep="")),
             hjust=0, vjust=.5, size = 4, colour = 'black',
             fontface = 'bold') +
-  labs(x = 'Suburbio', y = 'Precio', title = 'Precio medio por Suburbio') +
+  labs(x = 'Suburb', y = 'Price', title = 'Average Price per Suburb') +
   coord_flip()
 ```
 
-Se seleccionan del dataset los registros de los 10 suburbios más caros y mediante su latitud y longitud se representan en un mapa con la librería leaflet, donde cada punto es una vivienda y cada color un suburbio en concreto. Se puede apreciar dónde se sitúan las viviendas más caras en la ciudad de Melbourne.
+The rows corresponding to the top 10 most expensive suburbs are selected from the dataset and represented by their latitude and longitude in a map with leaflet library. Each dot on the map is a house and each color is a suburb. It can be seen where the most expensive properties from the city of Melbourne are situated.
 
 ```{r}
 Suburbs = c(head(as.character(suburbData$Suburb),10))
@@ -359,14 +360,14 @@ leaflet(SuburbsTop) %>% addTiles() %>%
   addCircles(lng = ~Longtitude, lat = ~Lattitude,radius = 3,
              color = ~pal(Suburb))  %>%
   addLegend("bottomright", pal = pal, values = ~Suburb,
-    title = "Distribución de viviendas Top 10 Suburbios",
+    title = "House distribution Top 10 Suburbs",
     opacity = 1
   ) %>%
   # controls
   setView(lng=center_lon, lat=center_lat, zoom=11)
 ```
 
-+ Ahora se va a representar cómo cambia el precio según la fecha en la que se haya vendido la vivienda. Para ello se representa en el eje X la fecha de venta (variable convertida a tipo Date) y en el eje Y el precio de venta.
++ On the next plot, change of price is shown depending on the date when the house was sold. To do this, the date is represented on the X axis (converted to Date type) and on the Y axis the property selling price.
 
 ```{r}
 housingDate = housing
@@ -379,9 +380,9 @@ ggplot(price_trend, aes(x = Date, y = Average)) +
   geom_line(color = "steelblue")
 ```
 
-Se aprecian datos algo más elevado cuanto más posterior es la fecha, pero no se identifica ninguna tendencia concreta en la variación del precio, probablemente porque el lapso de tiempo es de algo más de dos años.
+It seems that prices are a little bit higher the later the date is, but there is not a concrete trend identified on price variance, probably because the time period is a little over two years.
 
-+ En la siguiente representación se muestra mediante boxplots cómo cambia el precio y entre qué valores se mueve en función de la región a la que pertenece la vivienda.
++ In the next figure it can be seen with boxplots how the price change and between what values depending on the region to which the house belongs.
 
 ```{r}
 housing %>%
@@ -390,9 +391,9 @@ housing %>%
   coord_flip()
 ```
 
-Se aprecian regiones con un precio más elevado que otras, Southern Metropolitan (en azul) parece ser la región más cara.
+There are regions whose prices are higher than others, Southern Metropolitan (represented in blue) seems to be the most expensive region.
 
-+ Se representa también la variación del precio según el tipo de vivienda mediante boxplots de diferentes colores.
++ The variance of price according to the type of house is as well represented with boxplots of different colors. 
 
 ```{r}
 housing %>%
@@ -400,9 +401,9 @@ housing %>%
   geom_boxplot()
 ```
 
-Se puede comprobar que el tipo de vivienda influye claramente en el precio, siendo más elevado para el tipo h (house) que para el u (unit). Más cara para una casa que para un apartamento.
+As it can be seen, the house Type influence clearly on the price value, being higher for type h (house) than for ype u (unit). It's higher for a house than for an apartment.
 
-+ Se hace el mismo tipo de representación de la variable método de venta frente al precio para ver su influencia y si tiene relación.
++ Same type of plot is done for the Method variable versus Price, to see it influence and if they have any relation.
 
 ```{r}
 housing %>%
@@ -410,7 +411,7 @@ housing %>%
   geom_boxplot()
 ```
 
-+ A continuación, se estudia la distribución de la variable Distancia, que indica la distancia al distrito de negocios de Melbourne y se representa de nuevo junto al precio mediante un diagrama de dispersión. 
++ Now, variable Distance is analyzed, this variable indicate the distance of the house to the Melbourne Business District and is plotted with the Price variable using a geom point diagram.
 
 ```{r}
 housing %>% 
@@ -419,9 +420,9 @@ housing %>%
   geom_smooth(se = FALSE)
 ```
 
-Se aprecia una relación negativa, a menor distancia mayor puede ser el precio de las viviendas. Las viviendas con precio más elevado en ningún caso se encuentran cercanas al centro de negocios.
+There is a negative relation between Price and Distance, the shorter the distance, the higher the price of houses can be. The houses with less price value are never near the business district.
 
-+ Por último, se analizará como están distribuidos los valores de la variable Price mediante un histograma y una curva de densidad.
++ Lastly, it is analyzed how the variable Price is distributed using an histogram and a density curve.
 
 ```{r}
 housing %>% 
@@ -430,22 +431,23 @@ housing %>%
   geom_density(color="red", size=1.5)
 ```
 
-Los valores se concentran en las viviendas de un millón de dólares, y cuanto mayor es el precio menos viviendas hay con precio elevado.
+Values are concentrated on million dollar houses, the higher the price is, less houses are with very high value.
 
 
-# Modelo de prediccion de precio
 
-Según el análisis anterior llevado a cabo se decidide seleccionar un subconjunto de variables más influyentes en el precio para hacer un análisis de predicción de precios mediante un modelo de regresión lineal.
+# Price prediction Linear Regression model
 
-De las 21 variables iniciales hemos decididos utilizar 13 para la predicción del precio de las viviendas. El razonamiento para la eliminación de las variables que faltan es el siguiente:
+According to the previous analysis, a set of the most relevant variables to the price are selected for training a linear regression model to predict Price variable.
 
-- Eliminamos las columnas BuildingArea y Yearbuilt debido al alto porcentaje de NAs
-- Como mencionamos anteriormente, la granularidad de Address es muy alta, por lo que agrupaciones por Address proporcionaran demasiados resultados.
-- Suburb, CouncilArea y Date presentan el mismo problema de granularidad que Address, decidimos utilizar Regionname como variable geográfica con suficientes registros en los niveles del factor. 
-- Bedroom2 está correlacionada con Rooms y al tener NAs en sus registros y Rooms no, decidimos quedarnos con Rooms por fiabilidad.
-- SellerG provoca problemas al incluirse en el modelo como factor debido a no hay registros suficientes en todos los niveles al crear el training y el test, además de generar un número muy elevado de factores.
+From the initial 21 variables, 13 are selected to predict the price of the houses. The reasons to put aside the variables is:
 
-Se crea la variable fdata con el conjunto de variables a utilizar
+- BuildingArea and Yearbuilt columns are deleted because of the high percentage of NAs.
+- Address granularity is very high, grouping this variable will produce a lot of results.
+- Suburb, CouncilArea and Date have the same granularity problem as Address, Regioname is selected as geographical variable with enough registers in the factor levels.
+- Bedroom2 variable is correlated with Rooms and has some NAs so, Rooms is selected in terms of reliability.
+- SellerG causes some problems when is included in the model as a factor because there are not enough registers in each level of the variable and generates a very high number of factors.
+
+Variable fdata contains the set of variables selected.
 
 ```{r}
 fdata = select(housing, Rooms , Type , Method , Distance , 
@@ -453,13 +455,13 @@ fdata = select(housing, Rooms , Type , Method , Distance ,
     Lattitude , Longtitude , Propertycount, Price)
 ```
 
-A continuación, se muestra un gráfico de correlación entre las variables numéricas del dataframe.
+Here a correlation plot between numerical variables is plotted.
 
-Se observa que las variables Rooms, Bathroom, Distance, Lattitude y Longitud son las más correlacionadas con el Precio.
+As it can be observed Rooms, Bathroom, Distance, Lattitude and Longitude are the most correlated with Price variable.
 
-La variable Distance presenta correlación negativa con el Precio. A mayor distancia del centro de negocios de Melbourne menor será el precio y viceversa.
+Distance variable presents negative correlation with Price, higher distance from the Melbourne Business District means less price, and vice versa.
 
-Las variables Rooms y Bathroom también presentan alta correlación entre ellas, cuando el número de habitaciones de la vivienda es elevado también lo es el de baños.
+Rooms and Bathroom also have high correlation between them, when the number of rooms of the house is high, the number of bathrooms is too.
 
 ```{r}
 numvars <- sapply(fdata, class) %in% c("integer","numeric")
@@ -468,7 +470,7 @@ corrplot::corrplot(C, method = "circle")
 ```
 
 
-Para el modelo, se decide cambiar la columna de Rooms a factor debido a que se observa un comportamiento similar en cuanto al precio en los registros de 7 o más habitaciones, por tanto se toma la decisión de agruparlos y cambiar la columna a factor.
+For training the model, Rooms column is changed to factor because there is a similar behavior in Price for the houses with 7 or more rooms, these houses are grouped when changing the variable to factor.
 
 ```{r}
 fdata$Rooms <- as.factor(fdata$Rooms)
@@ -476,7 +478,7 @@ levels(fdata$Rooms) = c("1", "2", "3", "4", "5", "6", "7+", "7+", "7+", "7+")
 levels(fdata$Rooms)
 ```
 
-Siguiendo la misma lógica, se aplica un proceso similar sobre Bathroom para agrupar más los registros y convertir la variable a factor.
+To group the registers and convert the variable to factor, same procedure is done for Bathroom variable.
 
 ```{r}
 fdata$Bathroom <- as.factor(fdata$Bathroom)
@@ -489,15 +491,14 @@ table(fdata$Bathroom)
 ```
 
 
-Se estudia la variable Landsize y se observa que presenta numerosos outliers que podrían influir negativamente a la hora de proporcionar predicciones con el modelo.
-Se guardan los outliers en la variable landsize_outliers.
+Studying Landsize variable numerous outliers that could influence negatively on the model predictions are detected.Outliers are stored in variable landsize_outliers.
 
 ```{r}
 bxp_landsize <- boxplot(fdata$Landsize, plot = FALSE)
 landsize_outliers <- bxp_landsize$out
 ```
 
-Existen algunos outliers superiores a 50000 y se procede con su eliminación:
+There are outliers higher than 50000 that are eliminated from the dataset:
 
 ```{r}
 fdata = fdata %>%
@@ -505,12 +506,12 @@ fdata = fdata %>%
 ```
 
 
-Se va a realizar la predicción utilizando regresión lineal pero utilizando dos funciones diferentes (train y lm).
+Finally, the linear regression model is trained using train and lm functions.
 
-Se crean los sets de training y test con una distribución aleatoria del 80/20 de las muestras.
+Creating training and test sets with a random distribution 80/20 of the samples.
 
 ```{r}
-set.seed(150) # Para replicación
+set.seed(150) # For replication
 trainIndex <- createDataPartition(fdata$Price,   #createDataPartition creates proportional partitions
                                   p = 0.8,      #split probability for training
                                   list = FALSE, #Avoid output as a list
@@ -520,7 +521,7 @@ fTR <- fdata[trainIndex,]
 fTS <- fdata[-trainIndex,]
 ```
 
-Se realiza cross-validation con 10 folds para el trainControl.
+Cross-validation is added with 10 folds.
 
 ```{r}
 ctrl_tune <- trainControl(method = "cv",
@@ -530,7 +531,7 @@ ctrl_tune <- trainControl(method = "cv",
                           savePredictions = TRUE)              #save predictions
 ```
 
-Se procede con el entrenamiento del modelo de Regresión Lineal para el training set.
+Fitting the linear regression model for the training set:
 
 ```{r}
 set.seed(150)
@@ -551,74 +552,74 @@ fTS_eval = fTS
 fTS_eval$lm_pred = predict(lm.fit,  newdata = fTS)  
 ```
 
-En los resultados del modelo se puede ver que todas las variables seleccionadas son importantes (p-valor muy pequeño), excepto las variables MethodSA, MethodSP, Bathroom1 y Propertycount. 
-Se obtiene un error R-squared de 0.5977.
+Looking at the model results, it can be observed that all the variables selected are important (little p-value), except variables MethodSA, MethodSP, Bathroom1 and Propertycount. 
+A R-squared error of 0.5977 is obtained.
 
-Mediante el siguiente gráfico se muestran los residuos del modelo entrenado:
+On the next plot, the residuals from the trained model can be observed:
 
 ```{r}
 PlotModelDiagnosis(fTR, fTR$Price, fTR_eval$lm_pred,
                    together = TRUE)
 ```
-Se observa que los residuos de Landsize y Price destacan al equivocarse sobre todo en los registros con mayor precio y terreno.
 
-En general el modelo se equivoca más con las viviendas que menos cuestan prediciendo un valor superior. Se equivoca ligeramente también con las viviendas que más cuestan con un comportamiento similar, es decir, se equivoca en los extremos. Para los registros intermedios el modelo tiene mejor capacidad de predicción.
+Landsize and Price residuals stand out for making mistakes with predictions of house with higher price and terrain.
 
-Se calcula el error RMSE para el training y el test set.
+In general the model make more mistakes with the cheapest houses predicting a higher value. It also make mistakes with the most expensive houses, what means that the model do wrong in the extremes. For intermediate price houses the model has higher capability for predicting well.
+
+Computing RMSE error for the training and test set:
 
 ```{r}
-#Training and validation errors
 caret::RMSE(fTR_eval$lm_pred,fTR_eval$Price)
 caret::RMSE(fTS_eval$lm_pred,fTS_eval$Price)
 ```
 
 
-Se va a entrenar el modelo también con la función lm para comprobar los resultados obtenidos.
+Training the model also with lm function to check the results obtained.
 
 ```{r}
 model_l <- lm(Price ~ .,data = fTR)
 summary(model_l)
 ```
 
-Las únicas variables que no salen relevantes son MethodSA, Bathroom1, Bathroom2 y Propertycount (cambia MethodSP por Bathroom1 con respecto al anterior modelo entrenado con la función train). 
-Se obtiene igualmente un R-squared de 0.5977.
+Variables that are not relevant after the execution are MethodSA, Bathroom1, Bathroom2 and Propertycount (MethodSP is changed for Bathroom1 with respect to the previous trained model with train function). 
+Same R-squared error of 0.5977 is obtained.
 
 
-A continuación, se obtiene el VIF para las diferentes variables y se examina que Regionname tiene un valor de 25, valor elevado que indica que existe colinealidad con otra de las variables. Probamos a retirarla del modelo pero, tras comprobar los resultados tras su eliminación se decide mantenerla ya que es una variable significativa y resulta en mejores predicciones.
+Now, VIF is computed for the variables of the model. Regioname has a high value, meaning that there is colineality with another variable, deleting it from the model was tested but, after checking the results, the decision is to keep the variable because is significant to the model and results in better predictions.
 
 ```{r}
 vif(model_l)
 ```
 
-### Diagnóstico del modelo
 
-En este apartado se van representar varios gráficos para comprobar como de acertado es el modelo con sus predicciones.
+### Diagnosis of the model
 
-```{r}
-plotModelo = plot(model_l, which = 1, pch=19, lwd= 12)
-```
-
-Con este primer gráfico, se ve que los puntos se distribuyen en una banda horizontal de anchucha aproximadamente similar, pero verticalmente no están dispuestos de manera aleatoria como deberían ya que tienen tendencia a situarse en la parte superior del gráfico, lo que indica que el modelo tiende a sobreestimar el precio de las viviendas.
+In this section some graphics are showed to check how accurate is the model with it predictions.
 
 ```{r}
-plotModelo = plot(model_l, which = 2, pch=19)
+plotModel = plot(model_l, which = 1, pch=19, lwd= 12)
 ```
 
-Para esta segunda representación QQ-plot se observa que el modelo no se ajusta a la distribución normal en los extremos, especialmente por la derecha.
+In the first graphic, dots are distributed in a horizontal band of approximately similar width, but vertically are not distributed randomly as they have to be, they have a tendency of being on the top, indicating that the model tends to overestimate the price of the houses.
 
 ```{r}
-plotModelo = plot(model_l, which = 3, pch=19)
+plotModel = plot(model_l, which = 2, pch=19)
 ```
 
-Por último, con el gráfico Scale-Location se visualiza la anchura de la nube de puntos que parece que es más o menos homogénea, pero la línea roja no es del todo horizontal debido a una falta de homogeneidad de las varianzas.
+In this second QQ-plot representation it can be observed that the model does not adjust to the normal distribution on the extremes, specially on the left side.
+
+```{r}
+plotModel = plot(model_l, which = 3, pch=19)
+```
+
+Lastly, with the Scale-Location graphic the visualization of cloud of dots width seems to be more or less homogeneous, but the red line is not that horizontal because a lack of homogeneity of variances. 
 
 
-# Conclusión
 
-A lo largo del documento se ha realizado un análisis exhaustivo de las variables presentes en el dataset de viviendas vendidas en la ciudad de Melbourne, proporcionado gráficas, relaciones interesantes entre ellas e incluso incluyendo mapas de la distribución de las viviendas por su ubicación atendiendo a diferentes condiciones.
+# Conclusion
 
-También, se han estudiado cómo algunas de las variables tienen más influencias que otras en hacer que el precio de la vivienda aumente o disminuya.
+Throughout the document an exhaustive analysis of the variables in the dataset of houses sold in the city of Melbourne is done, providing graphs, interesting relationships between them and even including maps of the distribution of houses due to their location attending different terms.
 
-Por último, se ha entrenado un modelo de regresión lineal que proporciona predicciones de precio para datos de viviendas. Este modelo a pesar de tener una precisión perfecta puede ofrecer valores de precio bastante acertados para una vivienda nueva en la ciudad de Melbourne.
+Also, it has been studied how some of the variables have more influence than others in making the price of houses increase or decrease.
 
-
+Finally, a linear regression model that provides price predictions for housing data has been trained. This model despite not having a perfect precision can offer quite successful price values for a new house in the city of Melbourne.
